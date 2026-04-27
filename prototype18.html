@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BiasShield - AI Fairness Auditor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            color: #f1f5f9;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e1b4b, #2e1065);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .audit-panel {
+            background: #1e293b;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .bias-high {
+            color: #ef4444;
+        }
+
+        .bias-medium {
+            color: #f59e0b;
+        }
+
+        .bias-low {
+            color: #4ade80;
+        }
+
+        .comparison-chart {
+            background: #0f172a;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .bar-container {
+            margin: 0.75rem 0;
+        }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .bar-bg {
+            background: #334155;
+            height: 2rem;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: white;
+        }
+
+        .bar-male {
+            background: #3b82f6;
+        }
+
+        .bar-female {
+            background: #ec4899;
+        }
+
+        .recommendation-box {
+            background: #2d2a4a;
+            border-left: 4px solid #8b5cf6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .slider-container {
+            margin: 1rem 0;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+
+        .btn-fix {
+            background: linear-gradient(135deg, #8b5cf6, #ec4899);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 2rem;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ BiasShield</h1>
+        <p>Audit & mitigate algorithmic bias</p>
+    </div>
+    <div class="container">
+        <div class="audit-panel">
+            <h2>📊 Model: Loan Approval AI v2.3</h2>
+            <div class="metric-row">
+                <div class="metric"><div class="metric-value bias-high" id="disparateImpact">0.52</div><div>Disparate Impact</div><div style="font-size:0.7rem;">Threshold: 0.80</div></div>
+                <div class="metric"><div class="metric-value bias-high" id="equalOdds">+18%</div><div>Equal Opportunity Gap</div></div>
+                <div class="metric"><div class="metric-value bias-medium" id="calibration">0.12</div><div>Calibration Drift</div></div>
+            </div>
+
+            <div class="comparison-chart">
+                <h3>Approval Rates by Group</h3>
+                <div class="bar-container">
+                    <div class="bar-label"><span>Male</span><span id="maleRate">72%</span></div>
+                    <div class="bar-bg"><div class="bar-fill bar-male" style="width: 72%">72%</div></div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label"><span>Female</span><span id="femaleRate">48%</span></div>
+                    <div class="bar-bg"><div class="bar-fill bar-female" style="width: 48%">48%</div></div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label"><span>White</span><span id="whiteRate">68%</span></div>
+                    <div class="bar-bg"><div class="bar-fill bar-male" style="width: 68%">68%</div></div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label"><span>Minority</span><span id="minorityRate">44%</span></div>
+                    <div class="bar-bg"><div class="bar-fill bar-female" style="width: 44%">44%</div></div>
+                </div>
+            </div>
+
+            <div class="recommendation-box">
+                <strong>⚠️ Bias Detected:</strong> Disparate impact ratio 0.52 violates fairness threshold (0.80). Female and minority applicants are being rejected at disproportionately higher rates.
+                <div class="slider-container">
+                    <label>🔧 Fairness Adjustment Strength:</label>
+                    <input type="range" id="fairnessSlider" min="0" max="100" value="0">
+                    <div id="sliderValue">0% - Current model</div>
+                </div>
+                <button class="btn-fix" onclick="applyFairnessFix()">Apply Fairness Correction</button>
+                <div id="fixResult" style="margin-top: 1rem; font-size: 0.8rem;"></div>
+            </div>
+
+            <div class="comparison-chart" style="margin-top: 1rem;">
+                <h3>🔍 Feature Importance (Proxies Detected)</h3>
+                <div class="bar-container">
+                    <div class="bar-label"><span>Credit Score</span><span>42%</span></div>
+                    <div class="bar-bg"><div class="bar-fill" style="width: 42%; background:#3b82f6;">42%</div></div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label"><span>Income</span><span>28%</span></div>
+                    <div class="bar-bg"><div class="bar-fill" style="width: 28%; background:#3b82f6;">28%</div></div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label"><span style="color:#f87171;">⚠️ ZIP Code</span><span>18%</span></div>
+                    <div class="bar-bg"><div class="bar-fill" style="width: 18%; background:#ef4444;">18% (Race Proxy)</div></div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label"><span style="color:#f87171;">⚠️ Name Length</span><span>7%</span></div>
+                    <div class="bar-bg"><div class="bar-fill" style="width: 7%; background:#ef4444;">7% (Gender Proxy)</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCorrection = 0;
+        const slider = document.getElementById('fairnessSlider');
+        const sliderVal = document.getElementById('sliderValue');
+        
+        slider.addEventListener('input', function() {
+            currentCorrection = this.value;
+            sliderVal.innerText = `${currentCorrection}% - ${currentCorrection == 0 ? 'Current model' : currentCorrection < 30 ? 'Mild correction' : currentCorrection < 70 ? 'Moderate correction' : 'Aggressive correction'}`;
+        });
+        
+        function applyFairnessFix() {
+            const correction = currentCorrection / 100;
+            
+            // Calculate new rates with correction
+            const newMaleRate = 72 - (correction * 8);
+            const newFemaleRate = 48 + (correction * 20);
+            const newWhiteRate = 68 - (correction * 6);
+            const newMinorityRate = 44 + (correction * 24);
+            
+            document.getElementById('maleRate').innerText = Math.round(newMaleRate) + '%';
+            document.getElementById('femaleRate').innerText = Math.round(newFemaleRate) + '%';
+            document.getElementById('whiteRate').innerText = Math.round(newWhiteRate) + '%';
+            document.getElementById('minorityRate').innerText = Math.round(newMinorityRate) + '%';
+            
+            // Update bar widths
+            const bars = document.querySelectorAll('.bar-fill');
+            bars[0].style.width = newMaleRate + '%';
+            bars[0].innerText = Math.round(newMaleRate) + '%';
+            bars[1].style.width = newFemaleRate + '%';
+            bars[1].innerText = Math.round(newFemaleRate) + '%';
+            bars[2].style.width = newWhiteRate + '%';
+            bars[2].innerText = Math.round(newWhiteRate) + '%';
+            bars[3].style.width = newMinorityRate + '%';
+            bars[3].innerText = Math.round(newMinorityRate) + '%';
+            
+            // Calculate new disparate impact
+            const newImpact = (newFemaleRate / newMaleRate).toFixed(2);
+            document.getElementById('disparateImpact').innerHTML = newImpact;
+            document.getElementById('disparateImpact').className = 'metric-value ' + (newImpact >= 0.8 ? 'bias-low' : (newImpact >= 0.6 ? 'bias-medium' : 'bias-high'));
+            
+            const newGap = Math.abs(newFemaleRate - newMaleRate).toFixed(0);
+            document.getElementById('equalOdds').innerHTML = '+' + newGap + '%';
+            document.getElementById('equalOdds').className = 'metric-value ' + (newGap <= 10 ? 'bias-low' : (newGap <= 20 ? 'bias-medium' : 'bias-high'));
+            
+            const resultDiv = document.getElementById('fixResult');
+            if (newImpact >= 0.8) {
+                resultDiv.innerHTML = '✅ Fairness threshold achieved! Model now meets 80% disparate impact rule. Compliance report generated.';
+                resultDiv.style.color = '#4ade80';
+            } else {
+                resultDiv.innerHTML = `⚠️ Disparate impact improved to ${newImpact}. Further adjustment needed to reach 0.80 threshold.`;
+                resultDiv.style.color = '#fbbf24';
+            }
+        }
+    </script>
+</body>
+</html>
